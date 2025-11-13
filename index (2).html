@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Group Quiz Battle — NCERT Edition</title>
+<style>
+:root{--bg-1:#e0f7fa;--bg-2:#ffffff}
+body{font-family:Inter,Poppins,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;margin:0;background:linear-gradient(135deg,var(--bg-1),var(--bg-2));display:flex;align-items:center;justify-content:center;height:100vh}
+button.main-btn{background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;color:#fff;font-size:1.2rem;font-weight:700;padding:.9rem 1.6rem;border-radius:12px;cursor:pointer;box-shadow:0 10px 30px rgba(2,6,23,.12)}
+button.main-btn:hover{transform:scale(1.03)}
+#groupQuizOverlay{position:fixed;inset:0;display:none;z-index:9999;align-items:center;justify-content:center;background:rgba(250,250,250,.6);backdrop-filter:blur(8px)}
+#quizIntroOverlay{position:absolute;inset:0;display:none;z-index:10000;align-items:center;justify-content:center;flex-direction:column;font-weight:900;color:#0f172a;font-size:2rem;background:rgba(255,255,255,.95)}
+#groupQuizPanel{width:92%;height:82%;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);gap:14px;padding:18px;box-sizing:border-box}
+.group-panel{border-radius:18px;padding:16px;color:#fff;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 8px 30px rgba(2,6,23,.12);transition:transform .35s ease,box-shadow .35s ease}
+.group-panel:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(2,6,23,.14)}
+#groupA{background:linear-gradient(135deg,#ff6b6b,#f06595)}
+#groupB{background:linear-gradient(135deg,#4ECDC4,#45b7af)}
+#groupC{background:linear-gradient(135deg,#FFE66D,#FFD43B);color:#1f2937}
+#groupD{background:linear-gradient(135deg,#95E1D3,#00b894)}
+.group-question{font-weight:800;margin-bottom:8px;font-size:1rem}
+.group-options div{background:rgba(255,255,255,.92);color:#0f172a;padding:10px;border-radius:10px;margin:8px 0;cursor:pointer;font-weight:700;transition:all .22s ease}
+.group-options div:hover{transform:translateY(-4px);box-shadow:0 8px 18px rgba(2,6,23,.08)}
+.group-options .correct{background:#a7f3d0!important;border:2px solid #16a34a;box-shadow:0 12px 30px rgba(34,197,94,.12)}
+.group-options .wrong{background:#fecaca!important;border:2px solid #dc2626;animation:shake .35s ease}
+@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px)}40%,60%{transform:translateX(8px)}}
+@media(max-width:900px){#groupQuizPanel{grid-template-columns:1fr;grid-template-rows:repeat(4,1fr);height:86%}}
+</style>
+</head>
+<body>
+<button class="main-btn" onclick="startGroupQuiz4Panel()">👥👥👥👥 Group Quiz Battle</button>
+<div id="groupQuizOverlay">
+  <div id="quizIntroOverlay"><div id="introTitle">GROUP QUIZ BATTLE</div><div id="introRound" style="font-size:1rem;margin-top:10px">Round 1 – Ready?</div></div>
+  <div id="groupQuizPanel">
+    <div class="group-panel" id="groupA"><div class="group-question" id="questionA"></div><div id="optionsA" class="group-options"></div></div>
+    <div class="group-panel" id="groupB"><div class="group-question" id="questionB"></div><div id="optionsB" class="group-options"></div></div>
+    <div class="group-panel" id="groupC"><div class="group-question" id="questionC"></div><div id="optionsC" class="group-options"></div></div>
+    <div class="group-panel" id="groupD"><div class="group-question" id="questionD"></div><div id="optionsD" class="group-options"></div></div>
+  </div>
+</div>
+<script>
+// Class 11 CBSE Level Questions (80 unique questions)
+const masterQuestions = [
+// Sets (Q1-5)
+{"q": "If A = {1,2,3,4} and B = {3,4,5,6}, find A ∩ B.", "opts": ["{1,2}", "{3,4}", "{5,6}", "{1,2,5,6}"], "ans": 1},
+{"q": "If A ⊂ B and n(A) = 3, n(B) = 5, find n(A ∪ B).", "opts": ["3", "5", "8", "15"], "ans": 1},
+{"q": "The number of subsets of a set with 4 elements is ____.", "opts": ["4", "8", "16", "32"], "ans": 2},
+{"q": "De Morgan's Law states: (A ∪ B)' = ____.", "opts": ["A' ∩ B'", "A' ∪ B'", "A ∩ B", "A ∪ B"], "ans": 0},
+{"q": "If A = {x: x is prime and x < 10}, then A = ____.", "opts": ["{2,3,5,7}", "{1,2,3,5}", "{2,3,5,7,9}", "{3,5,7}"], "ans": 0},
+
+// Relations & Functions (Q6-10)
+{"q": "If f(x) = 2x + 3, then f(f(1)) = ____.", "opts": ["5", "7", "10", "13"], "ans": 3},
+{"q": "The domain of f(x) = √(x-2) is ____.", "opts": ["x > 2", "x ≥ 2", "x < 2", "All real numbers"], "ans": 1},
+{"q": "If f(x) = x² and g(x) = 2x, then (f ∘ g)(x) = ____.", "opts": ["4x²", "2x²", "x²+2x", "4x"], "ans": 0},
+{"q": "The range of f(x) = |x| is ____.", "opts": ["All real numbers", "[0, ∞)", "(-∞, 0]", "(-∞, ∞)"], "ans": 1},
+{"q": "If f is a function from A to B, then f is injective if ____.", "opts": ["every element of B has a preimage", "no two elements of A map to same element of B", "f(A) = B", "f is one-to-one and onto"], "ans": 1},
+
+// Trigonometry (Q11-20)
+{"q": "sin(π/6) = ____.", "opts": ["1/2", "√3/2", "1", "0"], "ans": 0},
+{"q": "cos(π/3) = ____.", "opts": ["1/2", "√3/2", "1", "0"], "ans": 0},
+{"q": "tan(π/4) = ____.", "opts": ["0", "1/√3", "1", "√3"], "ans": 2},
+{"q": "sin²θ + cos²θ = ____.", "opts": ["0", "1", "2", "-1"], "ans": 1},
+{"q": "1 + tan²θ = ____.", "opts": ["sec²θ", "cosec²θ", "cot²θ", "1"], "ans": 0},
+{"q": "sin(90° - θ) = ____.", "opts": ["sinθ", "cosθ", "tanθ", "-sinθ"], "ans": 1},
+{"q": "cos(π - θ) = ____.", "opts": ["cosθ", "-cosθ", "sinθ", "-sinθ"], "ans": 1},
+{"q": "sin(2π + θ) = ____.", "opts": ["sinθ", "cosθ", "-sinθ", "-cosθ"], "ans": 0},
+{"q": "The general solution of sin x = 0 is ____.", "opts": ["nπ", "2nπ", "nπ + (-1)ⁿ·0", "nπ ± π/2"], "ans": 0},
+{"q": "The range of sin x is ____.", "opts": ["[0,1]", "[-1,1]", "(0,1)", "(-∞,∞)"], "ans": 1},
+
+// Linear Inequalities (Q21-23)
+{"q": "Solve: 2x - 3 < 7. The solution is ____.", "opts": ["x < 5", "x > 5", "x ≤ 5", "x ≥ 5"], "ans": 0},
+{"q": "The solution of |x - 2| < 3 is ____.", "opts": ["-1 < x < 5", "-1 ≤ x ≤ 5", "x < -1 or x > 5", "-3 < x < 3"], "ans": 0},
+{"q": "Graphically, 2x + y ≤ 4 represents ____.", "opts": ["line only", "region above line", "region below line including line", "unbounded region"], "ans": 2},
+
+// Sequences & Series (Q24-30)
+{"q": "The nth term of AP: 2, 5, 8, ... is ____.", "opts": ["3n-1", "3n+1", "n+1", "2n+1"], "ans": 0},
+{"q": "Sum of first n terms of AP is Sₙ = n/2(2a + (n-1)d). If a=1, d=2, find S₅.", "opts": ["15", "20", "25", "30"], "ans": 2},
+{"q": "The common ratio of GP: 2, 6, 18, ... is ____.", "opts": ["2", "3", "4", "6"], "ans": 1},
+{"q": "Sum to infinity of GP with a=4, r=1/2 is ____.", "opts": ["4", "8", "16", "∞"], "ans": 1},
+{"q": "In an AP, if a₁₀ = 35 and a₂₀ = 75, find d.", "opts": ["2", "3", "4", "5"], "ans": 3},
+{"q": "The sum of first n natural numbers is ____.", "opts": ["n(n+1)/2", "n(n-1)/2", "n²", "n(n+1)"], "ans": 0},
+{"q": "If three numbers are in AP with sum 15, the middle term is ____.", "opts": ["3", "5", "7", "10"], "ans": 1},
+
+// Permutations & Combinations (Q31-36)
+{"q": "5P3 = ____.", "opts": ["10", "20", "60", "120"], "ans": 2},
+{"q": "6C2 = ____.", "opts": ["12", "15", "30", "720"], "ans": 1},
+{"q": "nP₀ = ____.", "opts": ["0", "1", "n", "n!"], "ans": 1},
+{"q": "nCₙ = ____.", "opts": ["0", "1", "n", "n!"], "ans": 1},
+{"q": "Number of ways to arrange 5 books in a shelf is ____.", "opts": ["20", "60", "120", "240"], "ans": 2},
+{"q": "Number of 4-digit numbers that can be formed using digits 1,2,3,4,5 without repetition is ____.", "opts": ["20", "60", "120", "625"], "ans": 2},
+
+// Binomial Theorem (Q37-40)
+{"q": "The coefficient of x³ in (x+1)⁵ is ____.", "opts": ["5", "10", "15", "20"], "ans": 1},
+{"q": "The middle term in the expansion of (1+x)⁶ is ____.", "opts": ["3rd term", "4th term", "5th term", "6th term"], "ans": 1},
+{"q": "The sum of binomial coefficients in (x+y)ⁿ is ____.", "opts": ["2ⁿ", "n·2ⁿ", "2ⁿ⁻¹", "n!"], "ans": 0},
+{"q": "The constant term in (x + 1/x)⁴ is ____.", "opts": ["1", "4", "6", "24"], "ans": 2},
+
+// Straight Lines (Q41-45)
+{"q": "Slope of line joining (2,3) and (5,7) is ____.", "opts": ["4/3", "3/4", "5/4", "1"], "ans": 0},
+{"q": "Equation of line with slope 2 and y-intercept 3 is ____.", "opts": ["y = 2x+3", "y = 3x+2", "2x+3y=0", "x+2y=3"], "ans": 0},
+{"q": "Distance between parallel lines 2x + 3y = 5 and 2x + 3y = 10 is ____.", "opts": ["1", "√13/13", "5/√13", "√5"], "ans": 2},
+{"q": "The angle between lines with slopes m₁ and m₂ is given by ____.", "opts": ["tan⁻¹(m₁+m₂)", "tan⁻¹|(m₁-m₂)/(1+m₁m₂)|", "tan⁻¹(m₁m₂)", "sin⁻¹(m₁-m₂)"], "ans": 1},
+{"q": "Lines 2x+y=5 and x+2y=5 are ____.", "opts": ["parallel", "perpendicular", "coincident", "neither"], "ans": 1},
+
+// Conic Sections (Q46-50)
+{"q": "The standard form of circle with center (0,0) and radius r is ____.", "opts": ["x²+y²=r", "x²+y²=r²", "(x-0)²+(y-0)²=r", "x²-y²=r²"], "ans": 1},
+{"q": "The eccentricity of ellipse is ____.", "opts": ["> 1", "= 1", "< 1", "≤ 0"], "ans": 2},
+{"q": "The eccentricity of hyperbola is ____.", "opts": ["> 1", "= 1", "< 1", "= 0"], "ans": 0},
+{"q": "The focus of parabola y² = 4ax is ____.", "opts": ["(a, 0)", "(0, a)", "(-a, 0)", "(0, -a)"], "ans": 0},
+{"q": "Circle x²+y²-4x+6y+9=0 has center ____.", "opts": ["(2,-3)", "(-2,3)", "(4,6)", "(-4,-6)"], "ans": 0},
+
+// Limits & Derivatives (Q51-57)
+{"q": "lim[x→0] (sin x / x) = ____.", "opts": ["0", "1", "∞", "-1"], "ans": 1},
+{"q": "lim[x→∞] (1 + 1/x)ˣ = ____.", "opts": ["0", "1", "e", "∞"], "ans": 2},
+{"q": "d/dx(xⁿ) = ____.", "opts": ["xⁿ", "nxⁿ⁻¹", "nxⁿ", "(n+1)xⁿ"], "ans": 1},
+{"q": "d/dx(sin x) = ____.", "opts": ["cos x", "-cos x", "sin x", "cosec x"], "ans": 0},
+{"q": "d/dx(eˣ) = ____.", "opts": ["eˣ⁺¹", "eˣ", "x·eˣ", "eˣ/x"], "ans": 1},
+{"q": "d/dx(ln x) = ____.", "opts": ["x", "1/x", "1", "ln(x+1)"], "ans": 1},
+{"q": "d/dx(cos x) = ____.", "opts": ["sin x", "-sin x", "cos x", "sec x"], "ans": 1},
+
+// Mathematical Reasoning (Q58-60)
+{"q": "The negation of 'All birds can fly' is ____.", "opts": ["No birds can fly", "Some birds cannot fly", "Some birds can fly", "Only some birds can fly"], "ans": 1},
+{"q": "If p ⟹ q is true and q is false, then p is ____.", "opts": ["true", "false", "may be true or false", "unknown"], "ans": 1},
+{"q": "p ⟹ q is equivalent to ____.", "opts": ["q ⟹ p", "¬p ∨ q", "p ∨ q", "¬p ∧ q"], "ans": 1},
+
+// Statistics (Q61-68)
+{"q": "Mean of 2, 4, 6, 8, 10 is ____.", "opts": ["4", "5", "6", "8"], "ans": 2},
+{"q": "Median of 1, 3, 5, 7, 9 is ____.", "opts": ["3", "5", "7", "9"], "ans": 1},
+{"q": "Mode of 1, 2, 2, 3, 3, 3, 4 is ____.", "opts": ["1", "2", "3", "4"], "ans": 2},
+{"q": "Range of 5, 10, 15, 20 is ____.", "opts": ["5", "10", "15", "20"], "ans": 2},
+{"q": "Variance of a dataset measures ____.", "opts": ["average value", "spread of data", "middle value", "frequency"], "ans": 1},
+{"q": "Standard deviation is ____.", "opts": ["√Variance", "Variance", "√Mean", "Variance/2"], "ans": 0},
+{"q": "For a dataset, if all values are equal, variance is ____.", "opts": ["0", "1", "mean", "undefined"], "ans": 0},
+{"q": "Coefficient of variation = (SD/Mean) × 100. It measures ____.", "opts": ["absolute spread", "relative spread", "mean deviation", "quartile deviation"], "ans": 1},
+
+// Probability (Q69-80)
+{"q": "In a deck of 52 cards, probability of drawing an ace is ____.", "opts": ["1/52", "4/52", "1/13", "1/4"], "ans": 1},
+{"q": "Probability of an impossible event is ____.", "opts": ["0", "0.5", "1", "-1"], "ans": 0},
+{"q": "Probability of a certain event is ____.", "opts": ["0", "0.5", "1", "∞"], "ans": 2},
+{"q": "If P(A) = 0.3 and P(B) = 0.4, and A,B independent, then P(A∩B) = ____.", "opts": ["0.7", "0.12", "0.1", "0.7"], "ans": 1},
+{"q": "P(A∪B) = P(A) + P(B) - P(A∩B). This is ____.", "opts": ["conditional probability", "addition theorem", "multiplication theorem", "Bayes' theorem"], "ans": 1},
+{"q": "If P(A|B) = P(A), then A and B are ____.", "opts": ["mutually exclusive", "independent", "dependent", "complementary"], "ans": 1},
+{"q": "Total probability theorem states P(A) = ∑ P(A|Bᵢ)P(Bᵢ). Bᵢ must be ____.", "opts": ["independent", "mutually exclusive and exhaustive", "equally likely", "complementary"], "ans": 1},
+{"q": "Mean of binomial distribution with n trials and probability p is ____.", "opts": ["p", "np", "n/p", "√(np)"], "ans": 1},
+{"q": "Variance of binomial distribution is ____.", "opts": ["np", "np(1-p)", "np(1+p)", "n²p"], "ans": 1},
+{"q": "In probability, if two events have no common outcome, they are ____.", "opts": ["independent", "mutually exclusive", "complementary", "exhaustive"], "ans": 1},
+{"q": "If a coin is tossed 4 times, probability of getting exactly 2 heads is ____.", "opts": ["1/2", "3/8", "5/8", "1/4"], "ans": 1},
+{"q": "Variance of 6 observations is 4. If all observations are multiplied by 3, new variance is ____.", "opts": ["4", "12", "36", "144"], "ans": 2}
+];
+
+// Create unique question sets for each team
+function createTeamQuestions() {
+    // Create 4 different shuffled sets from the master pool
+    const teamA_questions = [...masterQuestions].sort(() => Math.random() - 0.5);
+    const teamB_questions = [...masterQuestions].sort(() => Math.random() - 0.5);
+    const teamC_questions = [...masterQuestions].sort(() => Math.random() - 0.5);
+    const teamD_questions = [...masterQuestions].sort(() => Math.random() - 0.5);
+
+    return {
+        'A': teamA_questions,
+        'B': teamB_questions,
+        'C': teamC_questions,
+        'D': teamD_questions
+    };
+}
+
+const correctSound = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_53fbc6ff54.mp3?filename=correct-2-46134.mp3');
+const wrongSound = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_1a8c7eb42c.mp3?filename=error-2-36058.mp3');
+
+let teamQuestions = {};
+let qIndex = 0;
+let answersReceived = {A:false,B:false,C:false,D:false};
+let teamScores = {A:0, B:0, C:0, D:0};
+
+function startGroupQuiz4Panel(){
+    teamQuestions = createTeamQuestions();
+    qIndex = 0;
+    teamScores = {A:0, B:0, C:0, D:0};
+    answersReceived = {A:false,B:false,C:false,D:false};
+    document.getElementById('groupQuizOverlay').style.display = 'flex';
+    showIntro(1, ()=>displayQuestion());
+}
+
+function showIntro(round, cb){
+    const intro = document.getElementById('quizIntroOverlay');
+    const roundEl = document.getElementById('introRound');
+    const titles = ['Round 1 (Q1-5)','Round 2 (Q6-10)','Round 3 (Q11-15)','Round 4 (Q16-20)'];
+    roundEl.textContent = titles[round-1] || 'Final Round';
+    intro.style.display = 'flex';
+    setTimeout(()=>{
+        intro.style.opacity=0;
+        setTimeout(()=>{
+            intro.style.display='none';
+            intro.style.opacity=1;
+            cb();
+        }, 700);
+    }, 2000);
+}
+
+function displayQuestion(){
+    answersReceived = {A:false,B:false,C:false,D:false};
+
+    ['A','B','C','D'].forEach(group => {
+        // Get the question for THIS specific team
+        const questions = teamQuestions[group];
+        const q = questions[qIndex];
+
+        if(q) {
+            document.getElementById('question'+group).textContent = 'Q' + (qIndex+1) + '. ' + q.q;
+            const box = document.getElementById('options'+group);
+            box.innerHTML = '';
+            q.opts.forEach((opt, idx) => {
+                const d = document.createElement('div');
+                d.textContent = String.fromCharCode(65+idx) + '. ' + opt;
+                d.onclick = () => submitAnswer(group, idx, d);
+                box.appendChild(d);
+            });
+        }
+    });
+}
+
+function submitAnswer(group, idx, elem){
+    if (answersReceived[group]) return;
+    answersReceived[group]=true;
+
+    // Get the question for THIS group
+    const q = teamQuestions[group][qIndex];
+    const opts = document.getElementById('options'+group).children;
+
+    for(let o of opts) o.style.pointerEvents='none';
+
+    if (idx === q.ans){
+        elem.classList.add('correct');
+        teamScores[group]++;
+        correctSound.currentTime=0;
+        correctSound.play();
+    } else {
+        elem.classList.add('wrong');
+        wrongSound.currentTime=0;
+        wrongSound.play();
+        opts[q.ans].style.border='2px solid #16a34a';
+    }
+    checkAllAnswered();
+}
+
+function checkAllAnswered(){
+    if (Object.values(answersReceived).every(v=>v===true)){
+        setTimeout(()=>{
+            qIndex++;
+            if (qIndex < 20){
+                if (qIndex % 5 === 0 && qIndex > 0){
+                    const nextRound = Math.floor(qIndex/5)+1;
+                    showIntro(nextRound, displayQuestion);
+                } else displayQuestion();
+            } else finalLeaderboard();
+        }, 1500);
+    }
+}
+
+function finalLeaderboard(){
+    document.getElementById('groupQuizOverlay').style.display='none';
+    showScorecard();
+}
+
+function showScorecard(){
+    // Sort teams by score
+    const teamData = [
+        { letter: 'A', name: 'Group A', color: '#ff6b6b', score: teamScores.A },
+        { letter: 'B', name: 'Group B', color: '#4ECDC4', score: teamScores.B },
+        { letter: 'C', name: 'Group C', color: '#FFD43B', score: teamScores.C },
+        { letter: 'D', name: 'Group D', color: '#00b894', score: teamScores.D }
+    ];
+
+    const sorted = teamData.sort((a, b) => b.score - a.score);
+
+    // Create scorecard overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:linear-gradient(135deg,#1e293b,#0f172a);display:flex;align-items:center;justify-content:center;z-index:50000;font-family:Poppins,system-ui;padding:20px;';
+
+    // Create scorecard card
+    const card = document.createElement('div');
+    card.style.cssText = 'background:white;border-radius:24px;padding:40px;max-width:600px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+
+    // Title
+    const title = document.createElement('h1');
+    title.textContent = '🎯 Final Scorecard';
+    title.style.cssText = 'font-size:2.5rem;margin:0;color:#1e293b;font-weight:800;text-align:center;';
+
+    const subtitle = document.createElement('p');
+    subtitle.textContent = 'Quiz Battle Complete!';
+    subtitle.style.cssText = 'color:#64748b;font-size:1rem;margin:10px 0 30px 0;text-align:center;';
+
+    card.appendChild(title);
+    card.appendChild(subtitle);
+
+    // Rankings section
+    const rankingsDiv = document.createElement('div');
+    rankingsDiv.style.cssText = 'background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border-radius:16px;padding:20px;margin-bottom:20px;';
+
+    const rankTitle = document.createElement('h2');
+    rankTitle.textContent = '🏆 Group Rankings';
+    rankTitle.style.cssText = 'margin-top:0;color:#0c4a6e;font-size:1.2rem;text-align:center;margin-bottom:15px;';
+    rankingsDiv.appendChild(rankTitle);
+
+    const medals = ['🥇', '🥈', '🥉', '🏅'];
+    const medalColors = ['#FFD700', '#C0C0C0', '#CD7F32', '#87CEEB'];
+
+    sorted.forEach((group, idx) => {
+        const rankCard = document.createElement('div');
+        rankCard.style.cssText = 'background:white;padding:16px;margin:12px 0;border-radius:12px;border-left:5px solid '+medalColors[idx]+';display:flex;align-items:center;justify-content:space-between;';
+
+        const leftDiv = document.createElement('div');
+        leftDiv.style.cssText = 'display:flex;align-items:center;gap:15px;flex:1;';
+
+        const medal = document.createElement('span');
+        medal.textContent = medals[idx];
+        medal.style.cssText = 'font-size:2rem;';
+
+        const infoDiv = document.createElement('div');
+        const groupName = document.createElement('div');
+        groupName.textContent = group.name;
+        groupName.style.cssText = 'font-weight:700;color:#1e293b;font-size:1.1rem;';
+
+        const rank = document.createElement('div');
+        rank.textContent = 'Rank #' + (idx+1);
+        rank.style.cssText = 'color:#64748b;font-size:0.9rem;';
+
+        infoDiv.appendChild(groupName);
+        infoDiv.appendChild(rank);
+        leftDiv.appendChild(medal);
+        leftDiv.appendChild(infoDiv);
+
+        const scoreDiv = document.createElement('div');
+        scoreDiv.style.cssText = 'text-align:right;';
+
+        const scoreNum = document.createElement('div');
+        scoreNum.textContent = group.score + ' / 20';
+        scoreNum.style.cssText = 'font-size:1.8rem;font-weight:800;color:#0284c7;';
+
+        const scoreLabel = document.createElement('div');
+        scoreLabel.textContent = 'points';
+        scoreLabel.style.cssText = 'color:#64748b;font-size:0.85rem;';
+
+        scoreDiv.appendChild(scoreNum);
+        scoreDiv.appendChild(scoreLabel);
+
+        rankCard.appendChild(leftDiv);
+        rankCard.appendChild(scoreDiv);
+        rankingsDiv.appendChild(rankCard);
+    });
+
+    card.appendChild(rankingsDiv);
+
+    // Statistics
+    const statsDiv = document.createElement('div');
+    statsDiv.style.cssText = 'background:#f1f5f9;border-radius:12px;padding:16px;margin-bottom:20px;';
+
+    const statsTitle = document.createElement('h3');
+    statsTitle.textContent = '📊 Statistics';
+    statsTitle.style.cssText = 'margin-top:0;color:#334155;font-size:1rem;margin-bottom:12px;';
+    statsDiv.appendChild(statsTitle);
+
+    const statsGrid = document.createElement('div');
+    statsGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;';
+
+    // Total questions stat
+    const stat1 = document.createElement('div');
+    stat1.style.cssText = 'background:white;padding:12px;border-radius:8px;text-align:center;';
+    const stat1Label = document.createElement('div');
+    stat1Label.textContent = 'Total Questions';
+    stat1Label.style.cssText = 'color:#64748b;font-size:0.9rem;margin-bottom:8px;';
+    const stat1Num = document.createElement('div');
+    stat1Num.textContent = '20';
+    stat1Num.style.cssText = 'font-size:1.5rem;font-weight:700;color:#0284c7;';
+    stat1.appendChild(stat1Label);
+    stat1.appendChild(stat1Num);
+    statsGrid.appendChild(stat1);
+
+    // Winner stat
+    const stat2 = document.createElement('div');
+    stat2.style.cssText = 'background:white;padding:12px;border-radius:8px;text-align:center;';
+    const stat2Label = document.createElement('div');
+    stat2Label.textContent = 'Winner';
+    stat2Label.style.cssText = 'color:#64748b;font-size:0.9rem;margin-bottom:8px;';
+    const stat2Num = document.createElement('div');
+    stat2Num.textContent = sorted[0].name;
+    stat2Num.style.cssText = 'font-size:1.5rem;font-weight:700;color:#16a34a;';
+    stat2.appendChild(stat2Label);
+    stat2.appendChild(stat2Num);
+    statsGrid.appendChild(stat2);
+
+    statsDiv.appendChild(statsGrid);
+    card.appendChild(statsDiv);
+
+    // Buttons
+    const buttonDiv = document.createElement('div');
+    buttonDiv.style.cssText = 'display:flex;gap:12px;justify-content:center;';
+
+    const playAgainBtn = document.createElement('button');
+    playAgainBtn.textContent = 'Play Again';
+    playAgainBtn.style.cssText = 'background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;color:white;font-size:1.1rem;font-weight:700;padding:12px 24px;border-radius:12px;cursor:pointer;box-shadow:0 10px 30px rgba(2,6,23,0.12);flex:1;';
+    playAgainBtn.onmouseover = function() { this.style.transform = 'scale(1.03)'; };
+    playAgainBtn.onmouseout = function() { this.style.transform = 'scale(1)'; };
+    playAgainBtn.onclick = function() { location.reload(); };
+
+    const homeBtn = document.createElement('button');
+    homeBtn.textContent = 'Go Home';
+    homeBtn.style.cssText = 'background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;color:white;font-size:1.1rem;font-weight:700;padding:12px 24px;border-radius:12px;cursor:pointer;box-shadow:0 10px 30px rgba(2,6,23,0.12);flex:1;';
+    homeBtn.onmouseover = function() { this.style.transform = 'scale(1.03)'; };
+    homeBtn.onmouseout = function() { this.style.transform = 'scale(1)'; };
+    homeBtn.onclick = function() { window.location.href = 'EQUATIA_FINAL.html'; };
+
+    buttonDiv.appendChild(playAgainBtn);
+    buttonDiv.appendChild(homeBtn);
+    card.appendChild(buttonDiv);
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+}
+</script>
+</body>
+</html>
